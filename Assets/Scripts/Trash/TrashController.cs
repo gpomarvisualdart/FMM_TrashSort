@@ -87,7 +87,7 @@ public class TrashController : MonoBehaviour
     }
 
 
-    public void SortTrash()
+    public void SortTrash(bool isCorrect)
     {
         ChangePosition();
         ChangeTypes();
@@ -100,8 +100,11 @@ public class TrashController : MonoBehaviour
         
         if (transform.position.x > 3.35f)
         {
+            if(trashType != 6) { GameManager.instance.ChangeWrongTrashValue(1); }
+
             ChangePosition();
             ChangeTypes();
+
         }
     }
 }
