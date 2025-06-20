@@ -9,7 +9,7 @@ public class TrashTransparentLineController : MonoBehaviour
 
     private void OnEnable()
     {
-        Invoke("TurnOff", 0.3f);
+        Invoke("TurnOff", 0.2f);
     }
 
 
