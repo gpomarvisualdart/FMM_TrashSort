@@ -1,9 +1,8 @@
 using System.Collections;
 using System.Collections.Generic;
-using System.Linq.Expressions;
 using UnityEngine;
 
-public class TrashCanController : MonoBehaviour
+public class RhythmTrashCanController : MonoBehaviour
 {
     InputManager inputManager;
     TrashTransparentLineController trashTransparentLineController;
@@ -41,7 +40,6 @@ public class TrashCanController : MonoBehaviour
     }
 
 
-
     Coroutine CO_IsAttacking;
     public Coroutine GetIsAttackingCoroutine() => CO_IsAttacking;
     IEnumerator IsAttacking()
@@ -59,41 +57,26 @@ public class TrashCanController : MonoBehaviour
     }
     private void DetectTrash()
     {
-        if (CO_IsAttacking != null || acrossCan.GetIsAttackingCoroutine() != null) return;
-        CO_IsAttacking = StartCoroutine(IsAttacking());
-        RaycastHit[] hits = new RaycastHit[5];
-        int boxCasts = RotaryHeart.Lib.PhysicsExtension.Physics.BoxCastNonAlloc
-            (
-                transform.position,
-                transform.localScale / 2,
-                transform.forward,
-                hits,
-                transform.rotation,
-                Mathf.Infinity,
-                trashLayer,
-                RotaryHeart.Lib.PhysicsExtension.PreviewCondition.None
-            );
+        if (CO_IsAttacking != null) return;
 
+        Vector3 halfExtents = transform.localScale / 2;
+        Collider[] overlapTrash = Physics.OverlapBox(transform.position, halfExtents, transform.rotation, trashLayer);
+        RhythmTrashController falseTrashFallback = null;
 
-
-        if (boxCasts < 1) return;
-        TrashController fallbackFalseTrash = null;
-        for (int i = 0; i < boxCasts; i++)
+        foreach (Collider trash in overlapTrash)
         {
-            if (hits[i].collider == null) continue;
-            Transform hitTransform = hits[i].transform;
-            Debug.Log($"{i} is {hitTransform.name}");
-            TrashController trashController = hitTransform.TryGetComponent(out TrashController t) ? t : null;
-            if (trashController == null) continue;
-            if (trashController.GetTrashType() == this.trashType) { GameManager.instance.OnSuccessSorting(1); trashController.SortTrash(true); fallbackFalseTrash = null; return; }
-            else { fallbackFalseTrash = trashController; }
+            if (trash == null) continue;
+            RhythmTrashController rtc = trash.TryGetComponent(out RhythmTrashController r) ? r : null;
+            if (rtc == null) continue;
+            if (rtc.GetTrashType() == this.trashType) { GameManager.instance.OnSuccessSorting(1); rtc.SortTrash(true); return; }
+            else { falseTrashFallback = rtc; }
         }
 
-        if (fallbackFalseTrash != null)
+        if (falseTrashFallback != null)
         {
             GameManager.instance.ChangeWrongTrashValue(1);
-            fallbackFalseTrash.SortTrash(false);
-            fallbackFalseTrash = null;
+            falseTrashFallback.SortTrash(false);
+            falseTrashFallback = null;
         }
     }
 
@@ -117,7 +100,7 @@ public class TrashCanController : MonoBehaviour
         if (ColorUtility.TryParseHtmlString(value, out color))
         {
             rend.material.color = color;
-            trashTransparentLineController.InitializeMaterial(value);
+            //trashTransparentLineController.InitializeMaterial(value);
         }
     }
 }

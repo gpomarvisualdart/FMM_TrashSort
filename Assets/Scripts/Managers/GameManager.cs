@@ -41,6 +41,7 @@ public class GameManager : MonoBehaviour
 
     float currentTime;
     Coroutine CO_StartSpawningTrash;
+    public Coroutine GetStartSpawningTrashCO() => CO_StartSpawningTrash;
     IEnumerator StartSpawningTrash()
     {
         if (trashPool == null) { CO_StartSpawningTrash = null; yield break; }
