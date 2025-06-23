@@ -7,13 +7,18 @@ public class TrashController : MonoBehaviour
     [SerializeField] float speed;
     [SerializeField] int trashType;
     public int GetTrashType() => trashType;
+    [SerializeField] List<GameObject> trashTypePool = new List<GameObject>();
 
     Renderer rend;
     TrashSpawnerGameObject spawnerGameObj;
+    LayerMask trashLayer;
+    Collider myCollider;
 
     private void OnEnable()
     {
         rend = GetComponent<Renderer>();
+        myCollider = GetComponent<Collider>();
+        trashLayer = LayerMask.GetMask("Trashes");
 
         if (!rend.material.name.EndsWith("(Instance)"))
         {
@@ -55,35 +60,51 @@ public class TrashController : MonoBehaviour
     {
         if (spawnerGameObj == null) return;
 
-        Vector3 spawnerPos = spawnerGameObj.GetTransform().position;
-        Vector3 spawnerScale = spawnerGameObj.GetTransform().localScale;
+        Vector3 newPos = spawnerGameObj.GetTransform().GetChild(Random.Range(0, spawnerGameObj.GetTransform().childCount)).position;
+        Vector3 colliderHalfExtents = myCollider.bounds.size / 2;
+        int maxTries = 5;
+        float spaceBuffer = 1.2f;
 
-        Vector3 spawnableAreaHalf = (spawnerScale - transform.localScale) / 2f;
+        for (int i = 0; i < maxTries; i++)
+        {
+            Collider[] overlapColliders = new Collider[7];
+            int hits = RotaryHeart.Lib.PhysicsExtension.Physics.OverlapBoxNonAlloc(newPos, colliderHalfExtents, overlapColliders, transform.rotation, trashLayer);
 
-        Vector3 randomOffset = new Vector3
-            (
-            0f,
-            0f,
-            Random.Range(-spawnableAreaHalf.z, spawnableAreaHalf.z)
-            );
+            if (hits < 1) { transform.position = newPos; return; }
 
-        var v3_RepositionPos = new Vector3(spawnerPos.x, transform.position.y, spawnerPos.z) + randomOffset;
-
-        transform.position = v3_RepositionPos;
+            float maxOverlapSizes = 0f;
+            foreach (Collider col in overlapColliders)
+            {
+                if (col == null) continue;
+                Vector3 collidedSize = col.bounds.size;
+                maxOverlapSizes = Mathf.Max(maxOverlapSizes, Mathf.Max(collidedSize.x, collidedSize.z));
+            }
+            float stepDistance = (Mathf.Max(myCollider.bounds.size.x, myCollider.bounds.size.z)) + maxOverlapSizes / 2 + spaceBuffer;
+            newPos += Vector3.right * stepDistance;
+        }
+        transform.position = newPos;
     }
 
 
 
     private void ChangeTypes()
     {
-        Color color;
+        /*Color color;
 
         trashType = GetRandomTrashType(TrashTypes.TrashColor);
         if (!TrashTypes.TrashColor.TryGetValue(trashType, out string value)) return;
         if (ColorUtility.TryParseHtmlString(value, out color))
         {
             rend.material.color = color;
+        }*/
+        if (trashTypePool.Count < 1) return;
+        trashTypePool[trashType].SetActive(false);
+        trashType = GetRandomTrashType(TrashTypes.TrashColor);
+        while (trashType > trashTypePool.Count)
+        {
+            trashType = GetRandomTrashType(TrashTypes.TrashColor);
         }
+         trashTypePool[trashType].SetActive(true);
     }
 
 
